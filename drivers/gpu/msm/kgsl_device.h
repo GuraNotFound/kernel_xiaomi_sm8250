@@ -465,26 +465,6 @@ struct kgsl_process_private {
 	int fd_count;
 	atomic_t ctxt_count;
 	spinlock_t ctxt_count_lock;
-	/**
-	 * @state: state consisting KGSL_PROC_STATE and KGSL_PROC_PINNED_STATE
-	 */
-	unsigned long state;
-	/**
-	 * @reclaimed_page_cout: The number of pages reclaimed from this process
-	 */
-	atomic_t reclaimed_page_count;
-	/**
-	 * @fg_work: Work struct to schedule foreground work
-	 */
-	struct work_struct fg_work;
-	/**
-	 * @reclaim_lock: Mutex lock to protect KGSL_PROC_PINNED_STATE
-	 */
-	struct mutex reclaim_lock;
-	/**
-	 * @cmd_count: The number of cmds that are active for the process
-	 */
-	atomic_t cmd_count;
 };
 
 /**
