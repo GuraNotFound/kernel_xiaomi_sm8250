@@ -220,9 +220,13 @@ if [ $TYPE = test ]; then
     fi
 
     if [ $LEVEL = 4 ]; then
-        git revert 48d6466f502f0ed1ecafbad71aac79ec64f60cd8 --no-edit
-        git revert 525dbd2c5c97546c1305a245f0c613d9a4f39519 --no-edit
-        git revert a3f0009c637419795baf4195c4b236aa4c23a00a --no-edit
+        # This commit revert susfs in 3 commits:
+        # kernel: Import susfs4ksu v1.5.5 (fs/proc/task_mmu.c)
+        # /proc/pid/maps: fake jit-zygote-cache flags (fs/proc/task_mmu.c)
+        # ksu: Import susfs4ksu v1.5.5 (drivers/kernelsu)
+        #
+        # But I created a squash revert commit to make things simpler
+        git cherry-pick be75771fc7819f5a3d9e283bea60d94ff272f62b
         DESC="POCO F3 build without susfs"
         build
         LEVEL=$((LEVEL + 1))
@@ -232,9 +236,7 @@ if [ $TYPE = test ]; then
 
     if [ $LEVEL = 5 ]; then
         if [ $EXTRA = "!4"]; then
-            git revert 48d6466f502f0ed1ecafbad71aac79ec64f60cd8 --no-edit
-            git revert 525dbd2c5c97546c1305a245f0c613d9a4f39519 --no-edit
-            git revert a3f0009c637419795baf4195c4b236aa4c23a00a --no-edit
+            git cherry-pick be75771fc7819f5a3d9e283bea60d94ff272f62b
         fi
         DEVICE="pipa"
         DESC="Mi Pad 6 AOSP build without susfs"
@@ -246,9 +248,7 @@ if [ $TYPE = test ]; then
 
     if [ $LEVEL = 6 ]; then
         if [ $EXTRA = "!4"]; then
-            git revert 48d6466f502f0ed1ecafbad71aac79ec64f60cd8 --no-edit
-            git revert 525dbd2c5c97546c1305a245f0c613d9a4f39519 --no-edit
-            git revert a3f0009c637419795baf4195c4b236aa4c23a00a --no-edit
+            git cherry-pick be75771fc7819f5a3d9e283bea60d94ff272f62b
         fi
         DEVICE="alioth"
         git cherry-pick 6180281005f4a2ce7ea4895d1e35be47f99b3e11
@@ -295,9 +295,7 @@ if [ $TYPE = test ]; then
     fi
 
     if [ $LEVEL = 10 ]; then
-        git revert 48d6466f502f0ed1ecafbad71aac79ec64f60cd8 --no-edit
-        git revert 525dbd2c5c97546c1305a245f0c613d9a4f39519 --no-edit
-        git revert a3f0009c637419795baf4195c4b236aa4c23a00a --no-edit
+        git cherry-pick be75771fc7819f5a3d9e283bea60d94ff272f62b
         DESC="POCO F3 MIUI build without susfs"
         build
         LEVEL=$((LEVEL + 1))
@@ -307,9 +305,7 @@ if [ $TYPE = test ]; then
 
     if [ $LEVEL = 11 ]; then
         if [ $EXTRA = "!10" ]; then
-            git revert 48d6466f502f0ed1ecafbad71aac79ec64f60cd8 --no-edit
-            git revert 525dbd2c5c97546c1305a245f0c613d9a4f39519 --no-edit
-            git revert a3f0009c637419795baf4195c4b236aa4c23a00a --no-edit
+            git cherry-pick be75771fc7819f5a3d9e283bea60d94ff272f62b
         fi
         DEVICE="pipa"
         DESC="Mi Pad 6 MIUI build without susfs"
@@ -321,9 +317,7 @@ if [ $TYPE = test ]; then
 
     if [ $LEVEL = 12 ]; then
         if [ $EXTRA = "!10" ]; then
-            git revert 48d6466f502f0ed1ecafbad71aac79ec64f60cd8 --no-edit
-            git revert 525dbd2c5c97546c1305a245f0c613d9a4f39519 --no-edit
-            git revert a3f0009c637419795baf4195c4b236aa4c23a00a --no-edit
+            git cherry-pick be75771fc7819f5a3d9e283bea60d94ff272f62b
         fi
         DEVICE="alioth"
         git cherry-pick 6180281005f4a2ce7ea4895d1e35be47f99b3e11
