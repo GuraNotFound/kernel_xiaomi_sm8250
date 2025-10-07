@@ -17,8 +17,6 @@ source ../settings.sh
 # export EXTRA=""
 #
 
-START=$(date +%s)
-
 rm -rf out
 
 MAIN=/home/timisong
@@ -57,6 +55,7 @@ check_and_wget() {
 }
 
 build() {
+    START=$(date +%s)
     git log $LAST..HEAD > ../changelog.txt
     BRANCH=$(git branch --show-current)
 
@@ -109,59 +108,59 @@ build() {
                 LLVM_IAS=1 \
                 V=$VERBOSE 2>&1 | tee build.log
 
-find $DTS -name '*.dtb' -exec cat {} + > $DTB
-find $DTS -name 'Image' -exec cat {} + > $IMG
-find $DTS -name 'dtbo.img' -exec cat {} + > $DTBO
+    find $DTS -name '*.dtb' -exec cat {} + > $DTB
+    find $DTS -name 'Image' -exec cat {} + > $IMG
+    find $DTS -name 'dtbo.img' -exec cat {} + > $DTBO
 
-END=$(date +%s)
-ELAPSED=$((END - START))
+    END=$(date +%s)
+    ELAPSED=$((END - START))
 
-if grep -q -E "Ошибка 2|Error 2" build.log; then
-    echo Ошибка: Сборка завершилась с ошибкой
+    if grep -q -E "Ошибка 2|Error 2" build.log; then
+        echo Ошибка: Сборка завершилась с ошибкой
 
-    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
-    -d chat_id=@magictimekernel \
-    -d text="Ошибка в компиляции!" \
-    -d message_thread_id=38153
+        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
+        -d chat_id=@magictimekernel \
+        -d text="Ошибка в компиляции!" \
+        -d message_thread_id=38153
 
-    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
-    -F document=@./build.log \
-    -F message_thread_id=38153
+        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
+        -F document=@./build.log \
+        -F message_thread_id=38153
 
-    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
-    -F document=@../changelog.txt \
-    -F message_thread_id=38153
-else
-    echo Общее время выполнения: $ELAPSED секунд
+        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
+        -F document=@../changelog.txt \
+        -F message_thread_id=38153
+    else
+        echo Общее время выполнения: $ELAPSED секунд
 
-    cd $MAGICTIME
-    7z a -mx9 MagicTime-$DEVICE-$BUILD_DATE.zip * -x!*.zip
-    
-    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
-    -d chat_id=@magictimekernel \
-    -d text="Компиляция завершилась успешно! Время выполнения: $ELAPSED секунд" \
-    -d message_thread_id=38153
+        cd $MAGICTIME
+        7z a -mx9 MagicTime-$DEVICE-$BUILD_DATE.zip * -x!*.zip
+        
+        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
+        -d chat_id=@magictimekernel \
+        -d text="Компиляция завершилась успешно! Время выполнения: $ELAPSED секунд" \
+        -d message_thread_id=38153
 
-    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
-    -F document=@./MagicTime-$DEVICE-$BUILD_DATE.zip \
-    -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
-    -F message_thread_id=38153
-    
-    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
-    -F document=@../changelog.txt \
-    -F caption="Latest changes" \
-    -F message_thread_id=38153
+        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
+        -F document=@./MagicTime-$DEVICE-$BUILD_DATE.zip \
+        -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
+        -F message_thread_id=38153
+        
+        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
+        -F document=@../changelog.txt \
+        -F caption="Latest changes" \
+        -F message_thread_id=38153
 
-    rm -rf MagicTime-$DEVICE-$BUILD_DATE.zip
+        rm -rf MagicTime-$DEVICE-$BUILD_DATE.zip
 
-    BUILD=$((BUILD + 1))
+        BUILD=$((BUILD + 1))
 
-    cd $KERNEL
-    LAST=$(git log -1 --format=%H)
+        cd $KERNEL
+        LAST=$(git log -1 --format=%H)
 
-    sed -i "s/LAST=.*/LAST=$LAST/" ../settings.sh
-    sed -i "s/BUILD=.*/BUILD=$BUILD/" ../settings.sh
-fi
+        sed -i "s/LAST=.*/LAST=$LAST/" ../settings.sh
+        sed -i "s/BUILD=.*/BUILD=$BUILD/" ../settings.sh
+    fi
 }
 
 check_and_wget $CLANG \
