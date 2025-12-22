@@ -545,7 +545,7 @@ struct sched_entity {
 	u64				sum_exec_runtime;
 	u64				prev_sum_exec_runtime;
 	u64				vruntime;
-	s64				slice;
+	u64				slice;
 	union {
 		/*
 		 * When !@on_rq this field is vlag.
