@@ -2351,11 +2351,11 @@ EXPORT_SYMBOL_GPL(kick_process);
  * select_task_rq() below may allow selection of !active CPUs in order
  * to satisfy the above rules.
  */
-static int select_fallback_rq(int cpu, struct task_struct *p, bool allow_iso)
+static int select_fallback_rq(int cpu, struct task_struct *p)
 {
 	int nid = cpu_to_node(cpu);
 	const struct cpumask *nodemask = NULL;
-	enum { cpuset, possible, fail, bug } state = cpuset;
+	enum { cpuset, possible, fail } state = cpuset;
 	int dest_cpu;
 	int backup_cpu = -1;
 	unsigned int max_nr = UINT_MAX;
@@ -2409,8 +2409,6 @@ static int select_fallback_rq(int cpu, struct task_struct *p, bool allow_iso)
 			break;
 		case fail:
 			/* fall through */
-		case bug:
-			BUG();
 			break;
 		}
 	}
@@ -2437,8 +2435,6 @@ out:
 static inline
 int select_task_rq(struct task_struct *p, int cpu, int wake_flags)
 {
-	bool allow_isolated = (p->flags & PF_KTHREAD);
-
 	lockdep_assert_held(&p->pi_lock);
 
 	if (p->nr_cpus_allowed > 1)
@@ -2457,7 +2453,7 @@ int select_task_rq(struct task_struct *p, int cpu, int wake_flags)
 	 *   not worry about this generic constraint ]
 	 */
 	if (unlikely(!is_cpu_allowed(p, cpu)))
-		cpu = select_fallback_rq(task_cpu(p), p, allow_isolated);
+		cpu = select_fallback_rq(task_cpu(p), p);
 
 	return cpu;
 }
@@ -7307,10 +7303,6 @@ int sched_cpu_deactivate(unsigned int cpu)
 static void sched_rq_cpu_starting(unsigned int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
-	unsigned long flags;
-
-	raw_spin_lock_irqsave(&rq->lock, flags);
-	raw_spin_unlock_irqrestore(&rq->lock, flags);
 
 	rq->calc_load_update = calc_load_update;
 	update_max_interval();
