@@ -15,15 +15,16 @@ source ../settings.sh
 # export TYPE="test or early"
 # export LEVEL=1
 # export EXTRA=""
-# export SHAQ=hash commit for squash revert susfs ---
+# export SHAK=hash commit for squash revert KSU -----
 # export SHAB=hash commit for 5k battery            |
 #                                                   |
 #                                                   |
 #                                                   |
-# This hash should revert susfs in 3 commits:    <---
-# kernel: Import susfs4ksu v1.5.5 (fs/proc/task_mmu.c)
-# /proc/pid/maps: fake jit-zygote-cache flags (fs/proc/task_mmu.c)
-# ksu: Import susfs4ksu v1.5.5 (drivers/kernelsu)
+# This hash should revert KSU in 3 commits:    <-----
+# [1] Revert "kernel/reboot: Remove ksu_handle_sys_reboot()" --no-commit
+# [2] Revert "KernelSU: integrate scope-minimized manual hooks - k4.19 v1.6" --no-commit
+# [3] rm -rf drivers/kernelsu & git add drivers/ & git commit 
+#     & DONT FORGET DELETE drivers/kernelsu from drivers/Kconfig & drivers/Makefile
 #
 # But I created a squash revert commit to make things simpler
 
@@ -237,8 +238,8 @@ if [ $TYPE = test ]; then
     fi
 
     if [ $LEVEL = 4 ]; then
-        git cherry-pick $SHAQ
-        DESC="POCO F3 build without susfs"
+        git cherry-pick $SHAK
+        DESC="POCO F3 build without KSU"
         build
         LEVEL=$((LEVEL + 1))
         sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
@@ -246,12 +247,12 @@ if [ $TYPE = test ]; then
     fi
 
     if [ $EXTRA = "!4"]; then
-        git cherry-pick $SHAQ
+        git cherry-pick $SHAK
     fi
 
     if [ $LEVEL = 5 ]; then
         DEVICE="pipa"
-        DESC="Mi Pad 6 AOSP build without susfs"
+        DESC="Mi Pad 6 AOSP build without KSU"
         build
         LEVEL=$((LEVEL + 1))
         sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
@@ -261,7 +262,7 @@ if [ $TYPE = test ]; then
     if [ $LEVEL = 6 ]; then
         DEVICE="alioth"
         git cherry-pick $SHAB
-        DESC="POCO F3 build 5k battery without susfs"
+        DESC="POCO F3 build 5k battery without KSU"
         build
         LEVEL=$((LEVEL + 1))
         sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
@@ -306,8 +307,8 @@ if [ $TYPE = test ]; then
     fi
 
     if [ $LEVEL = 10 ]; then
-        git cherry-pick $SHAQ
-        DESC="POCO F3 MIUI build without susfs"
+        git cherry-pick $SHAK
+        DESC="POCO F3 MIUI build without KSU"
         build
         LEVEL=$((LEVEL + 1))
         sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
@@ -315,12 +316,12 @@ if [ $TYPE = test ]; then
     fi
 
     if [ $EXTRA = "!10" ]; then
-        git cherry-pick $SHAQ
+        git cherry-pick $SHAK
     fi
 
     if [ $LEVEL = 11 ]; then
         DEVICE="pipa"
-        DESC="Mi Pad 6 MIUI build without susfs"
+        DESC="Mi Pad 6 MIUI build without KSU"
         build
         LEVEL=$((LEVEL + 1))
         sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
@@ -330,7 +331,7 @@ if [ $TYPE = test ]; then
     if [ $LEVEL = 12 ]; then
         DEVICE="alioth"
         git cherry-pick $SHAB
-        DESC="POCO F3 MIUI build 5k battery without susfs"
+        DESC="POCO F3 MIUI build 5k battery without KSU"
         build
 
         # Return to stock
