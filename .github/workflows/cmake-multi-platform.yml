@@ -17,12 +17,12 @@ jobs:
 
     env:
       # --- CẤU HÌNH CỦA BẠN (HÃY SỬA PHẦN NÀY) ---
-      KERNEL_SOURCE: "https://github.com/Tên-User-Của-Bạn/Tên-Repo-Kernel" # Link repo kernel của bạn
-      KERNEL_BRANCH: "tên-branch-của-bạn" # Ví dụ: 13, fourteen, lineage-21
+      KERNEL_SOURCE: "https://github.com/guranotfound/kernel_xiaomi_sm8250" # Link repo kernel của bạn
+      KERNEL_BRANCH: "magictime-miui" # Ví dụ: 13, fourteen, lineage-21
       DEFCONFIG_NAME: "vendor/alioth_defconfig" # Tên file defconfig (check trong arch/arm64/configs/)
       
       # AnyKernel3 dành cho Alioth (Nên dùng bản đã config sẵn partition cho K40)
-      ANYKERNEL_SOURCE: "https://github.com/osm0sis/AnyKernel3" 
+      ANYKERNEL_SOURCE: "https://github.com/TIMISONG-dev/MagicTime-alioth" 
       ANYKERNEL_BRANCH: "master"
       
       # Toolchain (Khuyên dùng Proton Clang hoặc Azure Clang)
