@@ -1,95 +1,120 @@
-name: Build Kernel with Root Support
+name: Build Kernel for Redmi K40 (Alioth)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Cho phép chạy thủ công từ tab Actions
     inputs:
-      root_method:
-        description: 'Chọn phương pháp Root'
-        required: true
-        default: 'KernelSU-Next'
-        type: choice
-        options:
-        - KernelSU-Next
-        - None
-      device_defconfig:
-        description: 'Tên file defconfig (ví dụ: violet_defconfig)'
-        required: true
-        default: 'vendor/sm8250_defconfig'
+      make_clean:
+        description: 'Chạy make clean trước khi build?'
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04 # Sử dụng Ubuntu 20.04 container để ổn định môi trường
+
+    env:
+      # --- CẤU HÌNH CỦA BẠN (HÃY SỬA PHẦN NÀY) ---
+      KERNEL_SOURCE: "https://github.com/Tên-User-Của-Bạn/Tên-Repo-Kernel" # Link repo kernel của bạn
+      KERNEL_BRANCH: "tên-branch-của-bạn" # Ví dụ: 13, fourteen, lineage-21
+      DEFCONFIG_NAME: "vendor/alioth_defconfig" # Tên file defconfig (check trong arch/arm64/configs/)
+      
+      # AnyKernel3 dành cho Alioth (Nên dùng bản đã config sẵn partition cho K40)
+      ANYKERNEL_SOURCE: "https://github.com/osm0sis/AnyKernel3" 
+      ANYKERNEL_BRANCH: "master"
+      
+      # Toolchain (Khuyên dùng Proton Clang hoặc Azure Clang)
+      CLANG_URL: "https://github.com/kdrag0n/proton-clang"
+      CLANG_BRANCH: "master"
+      # --------------------------------------------
+
+      TZ: Asia/Ho_Chi_Minh
+
     steps:
-      - name: Checkout Kernel Source
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+    - name: Checkout Kernel Source
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }} # Tự động lấy repo hiện tại
+        ref: ${{ env.KERNEL_BRANCH }}
+        path: kernel_workspace
 
-      - name: Cài đặt Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev clang lld llvm curl git
+    - name: Update & Install Dependencies
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          git bc bison flex libssl-dev build-essential curl \
+          libncurses5-dev libncurses5 zip unzip zlib1g-dev \
+          ca-certificates python3 python2
+        
+    - name: Clone Clang Toolchain
+      run: |
+        git clone --depth=1 -b ${{ env.CLANG_BRANCH }} ${{ env.CLANG_URL }} clang
 
-      - name: Tải Toolchain (Proton Clang)
-        run: |
-          git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang-llvm
+    - name: Clone AnyKernel3
+      run: |
+        git clone --depth=1 -b ${{ env.ANYKERNEL_BRANCH }} ${{ env.ANYKERNEL_SOURCE }} AnyKernel3
 
-      - name: Tích hợp Root (KernelSU-Next)
-        if: github.event.inputs.root_method == 'KernelSU-Next'
-        run: |
-          echo "Đang tích hợp KernelSU-Next..."
-          # Sử dụng script setup chính thức từ rifsxd/KernelSU-Next
-          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
-          
-          # Thêm config vào defconfig để đảm bảo KSU được kích hoạt
-          echo "CONFIG_KSU=y" >> arch/arm64/configs/${{ github.event.inputs.device_defconfig }}
-          echo "CONFIG_KSU_SUSFS=y" >> arch/arm64/configs/${{ github.event.inputs.device_defconfig }} 
-          # Lưu ý: SUSFS là tùy chọn, nếu source k hỗ trợ thì bỏ dòng trên
+    - name: Set up Environment Variables
+      run: |
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "PATH=$GITHUB_WORKSPACE/clang/bin:$PATH" >> $GITHUB_ENV
+        echo "ARCH=arm64" >> $GITHUB_ENV
+        echo "SUBARCH=arm64" >> $GITHUB_ENV
+        echo "KBUILD_BUILD_USER=GithubAction" >> $GITHUB_ENV
+        echo "KBUILD_BUILD_HOST=Github" >> $GITHUB_ENV
 
-      - name: Build Kernel
-        run: |
-          export PATH=$(pwd)/clang-llvm/bin:$PATH
-          export ARCH=arm64
-          export SUBARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          
-          # Clean build
-          make O=out mrproper
-          
-          # Load config từ input
-          make O=out ${{ github.event.inputs.device_defconfig }}
-          
-          # Build
-          make -j$(nproc --all) O=out \
-                      CC=clang \
-                      LLVM=1 \
-                      LLVM_IAS=1 \
-                      AR=llvm-ar \
-                      NM=llvm-nm \
-                      OBJCOPY=llvm-objcopy \
-                      OBJDUMP=llvm-objdump \
-                      STRIP=llvm-strip
+    - name: Clean Build (Optional)
+      if: ${{ inputs.make_clean == 'true' }}
+      working-directory: kernel_workspace
+      run: |
+        make O=out clean
+        make O=out mrproper
 
-      - name: Đóng gói AnyKernel3
-        run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-          
-          # Copy file kernel đã build vào folder AnyKernel3
-          # Kiểm tra xem output ra Image.gz hay Image.gz-dtb để copy cho đúng
-          if [ -f out/arch/arm64/boot/Image.gz-dtb ]; then
-            cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
-          elif [ -f out/arch/arm64/boot/Image.gz ]; then
-            cp out/arch/arm64/boot/Image.gz AnyKernel3/
-          else
-             cp out/arch/arm64/boot/Image AnyKernel3/
-          fi
+    - name: Configure Kernel
+      working-directory: kernel_workspace
+      run: |
+        make O=out ARCH=arm64 ${{ env.DEFCONFIG_NAME }}
 
-          # Nén lại thành Zip
-          cd AnyKernel3
-          zip -r9 ../Kernel-KSU-Next.zip * -x .git/ README.md
+    - name: Build Kernel
+      working-directory: kernel_workspace
+      run: |
+        # Lệnh build chính. Điều chỉnh CROSS_COMPILE nếu cần (tuỳ toolchain)
+        make -j$(nproc --all) O=out \
+             ARCH=arm64 \
+             CC=clang \
+             CROSS_COMPILE=aarch64-linux-gnu- \
+             CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+             LLVM=1 \
+             LLVM_IAS=1
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Kernel-${{ github.event.inputs.root_method }}
-          path: Kernel-KSU-Next.zip
+    - name: Package Kernel (AnyKernel3)
+      run: |
+        cd AnyKernel3
+        # Copy các file output vào AnyKernel3. 
+        # LƯU Ý: Alioth thường dùng Image hoặc Image.gz-dtb tuỳ tree.
+        # Bạn cần kiểm tra xem kernel build ra file nào.
+        
+        if [ -f "../kernel_workspace/out/arch/arm64/boot/Image" ]; then
+          cp ../kernel_workspace/out/arch/arm64/boot/Image .
+        elif [ -f "../kernel_workspace/out/arch/arm64/boot/Image.gz-dtb" ]; then
+          cp ../kernel_workspace/out/arch/arm64/boot/Image.gz-dtb .
+        else
+          echo "Error: Kernel image not found!"
+          exit 1
+        fi
+
+        # Copy dtbo.img nếu có (Alioth thường cần cái này)
+        if [ -f "../kernel_workspace/out/arch/arm64/boot/dtbo.img" ]; then
+          cp ../kernel_workspace/out/arch/arm64/boot/dtbo.img .
+        fi
+
+        # Nén thành file zip
+        zip -r9 AnyKernel3-Alioth-$(date +%Y%m%d-%H%M).zip * -x .git README.md *placeholder
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Alioth-Kernel-Zip
+        path: AnyKernel3/*.zip
